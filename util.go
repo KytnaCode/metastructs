@@ -25,8 +25,9 @@ func newFile(pkgName string) *jen.File {
 
 func loadPackages(ctx context.Context, paths ...string) ([]*packages.Package, error) {
 	cfg := &packages.Config{
-		Mode:    packages.NeedTypes | packages.NeedImports,
+		Mode:    packages.NeedTypes | packages.NeedImports | packages.NeedTypesInfo,
 		Context: ctx,
+		Tests:   true,
 	}
 
 	return packages.Load(cfg, paths...)

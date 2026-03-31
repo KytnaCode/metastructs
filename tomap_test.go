@@ -75,39 +75,6 @@ func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
 	}
 }
 
-func printDiff(t *testing.T, expected, got string) {
-	t.Helper()
-
-	t.Logf("expected:\n%v\n\n----------\n\ngot:\n%v\n", expected, got)
-}
-
-func getType(t *testing.T, typName string) *types.Named {
-	t.Helper()
-
-	pkgs, err := loadPackages(t.Context(), ".")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, pkg := range pkgs {
-		obj := pkg.Types.Scope().Lookup(typName)
-		if obj == nil {
-			continue
-		}
-
-		typ, ok := obj.Type().(*types.Named)
-		if !ok {
-			panic("object type must be named")
-		}
-
-		return typ
-	}
-
-	t.Fatalf("`%v` not found", typName)
-
-	return nil
-}
-
 func getTestStructType(t *testing.T) *types.Named {
 	t.Helper()
 

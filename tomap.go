@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go/types"
 	"io"
-	"os"
 
 	"github.com/dave/jennifer/jen"
 )
@@ -30,8 +29,7 @@ type ToMapConfig struct {
 // ToMap generates a file defining a method to convert a struct given a config into a map and writes the content
 // into `w`.
 //
-// cfg.Typ is required, cfg.MethodName defaults to [DefaultMethodName] and cfg.PkgName to `GOPACKAGE` environment
-// variable, if GOPACKAGE is not set an error will be returned.
+// cfg.Typ and cfg.PkgName are required, cfg.MethodName defaults to [DefaultMethodName].
 func ToMap(w io.Writer, cfg ToMapConfig) error {
 	if cfg.MethodName == "" {
 		cfg.MethodName = DefaultMethodName
@@ -42,11 +40,7 @@ func ToMap(w io.Writer, cfg ToMapConfig) error {
 	}
 
 	if cfg.PkgName == "" {
-		cfg.PkgName = os.Getenv("GOPACKAGE")
-	}
-
-	if cfg.PkgName == "" {
-		return errors.New("missing package and GOPACKAGE environment variable is not set")
+		return errors.New("cfg.PackageName is required")
 	}
 
 	structType, ok := cfg.Typ.Underlying().(*types.Struct)

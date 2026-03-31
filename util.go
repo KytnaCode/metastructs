@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"go/types"
+	"path/filepath"
 	"reflect"
+	"strings"
 
 	"github.com/dave/jennifer/jen"
 	"golang.org/x/tools/go/packages"
@@ -78,4 +80,15 @@ func loadType(ctx context.Context, pkg string, typ string) (*types.Named, bool, 
 	}
 
 	return nil, false, errors.New("type not found")
+}
+
+func filename(strct, suffix string, test bool) string {
+	var testSuffix string
+	if test {
+		testSuffix = "_test"
+	}
+
+	path := fmt.Sprintf("%v_%v%v.go", strings.ToLower(strct), suffix, testSuffix)
+
+	return filepath.Join("./", filepath.Clean(path))
 }

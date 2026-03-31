@@ -163,15 +163,3 @@ func ToMap(w io.Writer, cfg ToMapConfig) error {
 
 	return f.Render(w)
 }
-
-func toMapFileName(strct string, test bool) string {
-	var suffix string
-
-	if !test {
-		suffix = "map"
-	} else {
-		suffix = "map_test"
-	}
-
-	return fmt.Sprintf("%v_%v.go", strings.ToLower(strct), suffix)
-}

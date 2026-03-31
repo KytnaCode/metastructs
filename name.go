@@ -2,10 +2,8 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"go/types"
 	"io"
-	"strings"
 
 	"github.com/dave/jennifer/jen"
 )
@@ -43,16 +41,4 @@ func StructName(w io.Writer, cfg StructNameConfig) error {
 	)
 
 	return f.Render(w)
-}
-
-func nameFileName(strct string, test bool) string {
-	var suffix string
-
-	if test {
-		suffix = "name_test"
-	} else {
-		suffix = "name"
-	}
-
-	return fmt.Sprintf("%v_%v.go", strings.ToLower(strct), suffix)
 }

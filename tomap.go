@@ -60,7 +60,7 @@ func ToMap(w io.Writer, cfg ToMapConfig) error {
 	}
 
 	if cfg.PkgName == "" {
-		return errors.New("cfg.PackageName is required")
+		return errors.New("cfg.PkgName is required")
 	}
 
 	if cfg.TagName == nil {

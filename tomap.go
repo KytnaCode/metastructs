@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/types"
 	"io"
+	"sort"
 	"strings"
 
 	"github.com/dave/jennifer/jen"
@@ -34,9 +35,10 @@ type ToMapConfig struct {
 	//
 	// ```
 	// type MyStruct struct {
-	//   Name        string                 // map key will be "Name".
-	//   Description string `to-map:"desc"` // map key will be "desc"
-	//   Completed   bool   `to-map:"-"`    // will not be included in map.
+	//   Name        string                         // map key will be "Name".
+	//   Description string   `to-map:"desc"`       // map key will be "desc".
+	//   Authors     []string `to-map:",omitempty"` // map key will be "Authors", omited if zero-value.
+	//   Completed   bool     `to-map:"-"`          // will not be included in map.
 	// }
 	// ```
 	TagName *string
@@ -73,6 +75,8 @@ func ToMap(w io.Writer, cfg ToMapConfig) error {
 
 	values := make(map[jen.Code]jen.Code, len(fields)) // Map values.
 
+	omitemptyFields := make(map[string]fieldData, len(fields))
+
 	for _, field := range fields {
 		name := field.name
 
@@ -84,15 +88,49 @@ func ToMap(w io.Writer, cfg ToMapConfig) error {
 
 			parts := strings.Split(tag, ",")
 
-			name = parts[0]
+			if parts[0] != "" {
+				name = parts[0]
+			}
 
-			if len(parts) > 1 {
-				// TODO: handle omitempty.
+			if len(parts) == 2 && parts[1] == "omitempty" {
+				omitemptyFields[name] = field
+
+				continue
 			}
 		}
 
 		values[jen.Lit(name)] = jen.Id(MethodReceiver).Dot(field.name)
 	}
+
+	const mapID = "structMap"
+
+	stmts := make([]jen.Code, 0, len(omitemptyFields)*2+2)
+
+	stmts = append(stmts,
+		jen.Id(mapID).Op(":=").Map(jen.String()).Any().Values(jen.Dict(values)),
+	)
+
+	keys := make([]string, 0, len(omitemptyFields))
+	for k := range omitemptyFields {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	for _, key := range keys {
+		field := omitemptyFields[key]
+
+		emptyID := "_" + field.name + "Empty"
+
+		stmt1 := jen.Var().Id(emptyID).Id(field.typ.String())
+		stmt2 := jen.If(jen.Id(MethodReceiver).Dot(field.name).Op("!=").Id(emptyID)).Block(
+			jen.Id(mapID).Index(jen.Lit(key)).Op("=").Id(MethodReceiver).Dot(field.name),
+		)
+
+		stmts = append(stmts, stmt1, stmt2)
+	}
+
+	stmts = append(stmts, jen.Return(jen.Id(mapID)))
 
 	f := newFile(cfg.PkgName)
 
@@ -103,11 +141,7 @@ func ToMap(w io.Writer, cfg ToMapConfig) error {
 	}
 
 	f.Func().Params(jen.Id(MethodReceiver).Add(recvType)).Id(cfg.MethodName).Params().Map(jen.String()).Any().Block(
-		jen.Return(
-			jen.Map(jen.String()).Any().Values(
-				jen.Dict(values),
-			),
-		),
+		stmts...,
 	)
 
 	return f.Render(w)

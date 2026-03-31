@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"go/types"
@@ -29,7 +28,7 @@ type ToMapConfig struct {
 
 // ToMap generates a file defining a method to convert a struct given a config into a map and writes the content
 // into `w`.
-func ToMap(ctx context.Context, w io.Writer, cfg ToMapConfig) error {
+func ToMap(w io.Writer, cfg ToMapConfig) error {
 	if cfg.MethodName == "" {
 		cfg.MethodName = DefaultMethodName
 	}

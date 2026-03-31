@@ -96,7 +96,7 @@ func TestToMap_Defaults(t *testing.T) {
 
 	var res strings.Builder
 
-	if err := ToMap(t.Context(), &res, cfg); err != nil {
+	if err := ToMap(&res, cfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -139,7 +139,7 @@ func TestToMap_CustomMethodName(t *testing.T) {
 
 	var res strings.Builder
 
-	if err := ToMap(t.Context(), &res, cfg); err != nil {
+	if err := ToMap(&res, cfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -180,7 +180,7 @@ func TestToMap_PointerReceiver(t *testing.T) {
 
 	var res strings.Builder
 
-	if err := ToMap(t.Context(), &res, cfg); err != nil {
+	if err := ToMap(&res, cfg); err != nil {
 		t.Fatal(err)
 	}
 

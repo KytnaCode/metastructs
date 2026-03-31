@@ -26,6 +26,11 @@ type expectedData struct {
 	SliceKey   string
 }
 
+var (
+	_ = testStruct{}
+	_ = nonStructTestType("")
+)
+
 type testStruct struct {
 	Name  string
 	Count int
@@ -66,8 +71,6 @@ func getType(t *testing.T, typName string) *types.Named {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	_ = testStruct{}
 
 	for _, pkg := range pkgs {
 		obj := pkg.Types.Scope().Lookup(typName)

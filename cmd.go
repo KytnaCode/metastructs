@@ -63,6 +63,47 @@ var toMapCmd = &cobra.Command{
 	},
 }
 
+var nameCmd = &cobra.Command{
+	Use:   "name",
+	Short: "generate a method that returns struct's name",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		sourceType, pointer := strings.CutPrefix(target, "*")
+
+		typ, test, err := loadType(cmd.Context(), pkgName, sourceType)
+		if err != nil {
+			return err
+		}
+
+		cfg := StructNameConfig{
+			Typ:        typ,
+			PkgName:    pkgName,
+			MethodName: methodName,
+			Pointer:    pointer,
+		}
+
+		fileName := nameFileName(sourceType, test)
+
+		path := filepath.Join("./", filepath.Clean(fileName))
+
+		f, err := os.Create(path)
+		if err != nil {
+			return err
+		}
+
+		defer func() {
+			if err := f.Close(); err != nil {
+				log.Println(err)
+			}
+		}()
+
+		if err := StructName(f, cfg); err != nil {
+			return err
+		}
+
+		return f.Sync()
+	},
+}
+
 func init() {
 	rootCmd.PersistentFlags().StringVarP(
 		&pkgName,
@@ -75,5 +116,9 @@ func init() {
 	toMapCmd.Flags().StringVarP(&methodName, "method", "m", "ToMap", "out method name")
 	toMapCmd.Flags().StringVarP(&tag, "tag", "s", "to-map", "tag from which read metadata")
 
+	nameCmd.Flags().StringVarP(&target, "target", "t", "", "target type")
+	nameCmd.Flags().StringVarP(&methodName, "method", "m", DefaultNameMethodName, "out method name")
+
 	rootCmd.AddCommand(toMapCmd)
+	rootCmd.AddCommand(nameCmd)
 }

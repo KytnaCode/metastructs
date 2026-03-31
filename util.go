@@ -18,7 +18,7 @@ type fieldData struct {
 func newFile(pkgName string) *jen.File {
 	f := jen.NewFile(pkgName)
 
-	f.PackageComment(PACKAGE_COMMENT)
+	f.PackageComment(PackageComment)
 
 	return f
 }

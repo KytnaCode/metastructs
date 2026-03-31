@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/types"
 	"io"
+	"os"
 
 	"github.com/dave/jennifer/jen"
 )
@@ -36,6 +37,14 @@ func ToMap(w io.Writer, cfg ToMapConfig) error {
 	if cfg.Typ == nil {
 		return errors.New("type must not be nil")
 	}
+
+	if cfg.PkgName == "" {
+		cfg.PkgName = os.Getenv("GOPACKAGE")
+	}
+
+	if cfg.PkgName == "" {
+		return errors.New("missing package and GOPACKAGE environment variable is not set")
+	} 
 
 	structType, ok := cfg.Typ.Underlying().(*types.Struct)
 	if !ok {

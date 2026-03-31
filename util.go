@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"go/types"
 	"reflect"
 
@@ -50,4 +52,30 @@ func getStructFields(structType *types.Struct) []fieldData {
 	}
 
 	return fields
+}
+
+func loadType(ctx context.Context, pkg string, typ string) (*types.Named, error) {
+	pkgs, err := loadPackages(ctx, pkg)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(pkgs) == 0 {
+		return nil, errors.New("package not found")
+	}
+
+	for _, pkg := range pkgs {
+		obj := pkg.Types.Scope().Lookup(typ)
+		if obj == nil {
+			continue
+		}
+
+		if named, ok := obj.Type().(*types.Named); ok {
+			return named, nil
+		} else {
+			return nil, fmt.Errorf("`%v` is not a struct", obj.Name())
+		}
+	}
+
+	return nil, errors.New("type not found")
 }

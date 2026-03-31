@@ -10,7 +10,7 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-const DefaultNameMethodName = "Name"
+const DefaultNameMethodName = "StructName"
 
 type StructNameConfig struct {
 	Typ        *types.Named

@@ -40,11 +40,9 @@ var toMapCmd = &cobra.Command{
 			Pointer:    pointer,
 		}
 
-		fileName := toMapFileName(sourceType, test)
+		file := filepath.Clean(filename(sourceType, "map", test))
 
-		path := filepath.Join("./", filepath.Clean(fileName))
-
-		f, err := os.Create(path)
+		f, err := os.Create(file)
 		if err != nil {
 			return err
 		}
@@ -81,11 +79,9 @@ var nameCmd = &cobra.Command{
 			Pointer:    pointer,
 		}
 
-		fileName := nameFileName(sourceType, test)
+		file := filepath.Clean(filename(sourceType, "name", test))
 
-		path := filepath.Join("./", filepath.Clean(fileName))
-
-		f, err := os.Create(path)
+		f, err := os.Create(file)
 		if err != nil {
 			return err
 		}

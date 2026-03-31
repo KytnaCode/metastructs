@@ -72,9 +72,9 @@ func loadType(ctx context.Context, pkg string, typ string) (*types.Named, bool, 
 
 		if named, ok := obj.Type().(*types.Named); ok {
 			return named, pkg.ForTest != "", nil
-		} else {
-			return nil, false, fmt.Errorf("`%v` is not a struct", obj.Name())
 		}
+
+		return nil, false, fmt.Errorf("`%v` is not a struct", obj.Name())
 	}
 
 	return nil, false, errors.New("type not found")

@@ -92,7 +92,7 @@ func ToMap(w io.Writer, cfg ToMapConfig) error {
 				name = parts[0]
 			}
 
-			if len(parts) == 2 && parts[1] == "omitempty" {
+			if len(parts) > 1 && parts[1] == "omitempty" {
 				omitemptyFields[name] = field
 
 				continue

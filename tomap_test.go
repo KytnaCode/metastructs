@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	testStructName        = "testStruct"
-	taggedTestStructName  = "taggedTestStruct"
-	nonStructTestTypeName = "nonStructTestType"
+	testStructName          = "testStruct"
+	taggedTestStructName    = "taggedTestStruct"
+	omitemptyTestStructName = "omitemptyTestStruct"
+	nonStructTestTypeName   = "nonStructTestType"
 )
 
 var expectedTmpl *template.Template
@@ -30,6 +31,7 @@ type expectedData struct {
 var (
 	_ = testStruct{}
 	_ = taggedTestStruct{}
+	_ = omitemptyTestStruct{}
 	_ = nonStructTestType("")
 )
 
@@ -45,6 +47,12 @@ type taggedTestStruct struct {
 	Slice []float64 `to-map:"-"`
 }
 
+type omitemptyTestStruct struct {
+	Name  string `to-map:",omitempty"`
+	Count int
+	Slice []float64 `to-map:"slice,omitempty"`
+}
+
 type nonStructTestType string
 
 func init() {
@@ -54,11 +62,12 @@ func init() {
 package {{.Package}}
 
 func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
-	return map[string]any{
+	structMap := map[string]any{
 		"{{.CountKey}}": {{.Receiver}}.Count,
 		"{{.NameKey}}":  {{.Receiver}}.Name,
 		"{{.SliceKey}}": {{.Receiver}}.Slice,
 	}
+	return structMap
 }
 `)
 	if err != nil {
@@ -296,10 +305,11 @@ func TestToMap_Tags(t *testing.T) {
 package {{.Package}}
 
 func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
-	return map[string]any{
+	structMap := map[string]any{
 		"{{.CountKey}}": {{.Receiver}}.Count,
 		"{{.NameKey}}":  {{.Receiver}}.Name,
 	}
+	return structMap
 }
 `)
 	if err != nil {
@@ -316,6 +326,65 @@ func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
 		MethodName: DefaultMethodName,
 		NameKey:    "name",
 		CountKey:   "count",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res.String() != expected.String() {
+		printDiff(t, expected.String(), res.String())
+
+		t.Fail()
+	}
+}
+
+func TestToMap_OmitEmptyFields(t *testing.T) {
+	t.Parallel()
+
+	typ := getType(t, omitemptyTestStructName)
+
+	const pkgName = "main"
+
+	cfg := ToMapConfig{
+		PkgName: pkgName,
+		Typ:     typ,
+	}
+
+	var res strings.Builder
+
+	if err := ToMap(&res, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedTmpl, err := template.New("expected").Parse(`// {{.Comment}}
+package {{.Package}}
+
+func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
+	structMap := map[string]any{"{{.CountKey}}": {{.Receiver}}.Count}
+	if {{.Receiver}}.Name != "" {
+		structMap["{{.NameKey}}"] = {{.Receiver}}.Name
+	}
+	if len({{.Receiver}}.Slice) > 0 {
+		structMap["{{.SliceKey}}"] = {{.Receiver}}.Slice
+	}
+	return structMap
+}
+`)
+	if err != nil {
+		panic(err)
+	}
+
+	var expected strings.Builder
+
+	err = expectedTmpl.Execute(&expected, expectedData{
+		Package:    pkgName,
+		Comment:    PackageComment,
+		Receiver:   MethodReceiver,
+		RecvType:   typ.Obj().Name(),
+		MethodName: DefaultMethodName,
+		CountKey:   "Count",
+		NameKey:    "Name",
+		SliceKey:   "slice",
 	})
 	if err != nil {
 		t.Fatal(err)

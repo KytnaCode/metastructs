@@ -37,10 +37,12 @@ type ToMapConfig struct {
 	// type MyStruct struct {
 	//   Name        string                         // map key will be "Name".
 	//   Description string   `to-map:"desc"`       // map key will be "desc".
-	//   Authors     []string `to-map:",omitempty"` // map key will be "Authors", omitted if empty (per encoding/json omitempty rules).
+	//   Authors     []string `to-map:",omitempty"` // map key will be "Authors".
 	//   Completed   bool     `to-map:"-"`          // will not be included in map.
 	// }
 	// ```
+	//
+	// A field is considered empty by `omitempty` based on the same rules defined in encoding/json.
 	TagName *string
 }
 

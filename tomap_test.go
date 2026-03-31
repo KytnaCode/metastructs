@@ -10,6 +10,7 @@ import (
 
 const (
 	testStructName        = "testStruct"
+	taggedTestStructName  = "taggedTestStruct"
 	nonStructTestTypeName = "nonStructTestType"
 )
 
@@ -28,6 +29,7 @@ type expectedData struct {
 
 var (
 	_ = testStruct{}
+	_ = taggedTestStruct{}
 	_ = nonStructTestType("")
 )
 
@@ -35,6 +37,12 @@ type testStruct struct {
 	Name  string
 	Count int
 	Slice []float64
+}
+
+type taggedTestStruct struct {
+	Name  string    `to-map:"name"`
+	Count int       `to-map:"count"`
+	Slice []float64 `to-map:"-"`
 }
 
 type nonStructTestType string
@@ -263,5 +271,59 @@ func TestToMap_NoStructType(t *testing.T) {
 	err := ToMap(io.Discard, cfg)
 	if err == nil {
 		t.Fatal("expected ToMap return error when called with a non struct type")
+	}
+}
+
+func TestToMap_Tags(t *testing.T) {
+	t.Parallel()
+
+	typ := getType(t, taggedTestStructName)
+
+	const pkgMain = "main"
+
+	cfg := ToMapConfig{
+		PkgName: pkgMain,
+		Typ:     typ,
+	}
+
+	var res strings.Builder
+
+	if err := ToMap(&res, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedTmpl, err := template.New("expected").Parse(`// {{.Comment}}
+package {{.Package}}
+
+func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
+	return map[string]any{
+		"{{.CountKey}}": {{.Receiver}}.Count,
+		"{{.NameKey}}":  {{.Receiver}}.Name,
+	}
+}
+`)
+	if err != nil {
+		panic(err)
+	}
+
+	var expected strings.Builder
+
+	err = expectedTmpl.Execute(&expected, expectedData{
+		Package:    pkgMain,
+		Comment:    PackageComment,
+		Receiver:   MethodReceiver,
+		RecvType:   typ.Obj().Name(),
+		MethodName: DefaultMethodName,
+		NameKey:    "name",
+		CountKey:   "count",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res.String() != expected.String() {
+		printDiff(t, expected.String(), res.String())
+
+		t.Fail()
 	}
 }

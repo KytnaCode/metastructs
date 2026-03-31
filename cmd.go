@@ -64,7 +64,7 @@ var toMapCmd = &cobra.Command{
 var nameCmd = &cobra.Command{
 	Use:   "name",
 	Short: "generate a method that returns struct's name",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		sourceType, pointer := strings.CutPrefix(target, "*")
 
 		typ, test, err := loadType(cmd.Context(), pkgName, sourceType)

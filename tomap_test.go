@@ -2,12 +2,16 @@ package main
 
 import (
 	"go/types"
+	"io"
 	"strings"
 	"testing"
 	"text/template"
 )
 
-const testStructName = "testStruct"
+const (
+	testStructName        = "testStruct"
+	nonStructTestTypeName = "nonStructTestType"
+)
 
 var expectedTmpl *template.Template
 
@@ -27,6 +31,8 @@ type testStruct struct {
 	Count int
 	Slice []float64
 }
+
+type nonStructTestType string
 
 func init() {
 	var err error
@@ -53,7 +59,7 @@ func printDiff(t *testing.T, expected, got string) {
 	t.Logf("expected:\n%v\n\n----------\n\ngot:\n%v\n", expected, got)
 }
 
-func getTestStructType(t *testing.T) *types.Named {
+func getType(t *testing.T, typName string) *types.Named {
 	t.Helper()
 
 	pkgs, err := loadPackages(t.Context(), ".")
@@ -64,7 +70,7 @@ func getTestStructType(t *testing.T) *types.Named {
 	_ = testStruct{}
 
 	for _, pkg := range pkgs {
-		obj := pkg.Types.Scope().Lookup(testStructName)
+		obj := pkg.Types.Scope().Lookup(typName)
 		if obj == nil {
 			continue
 		}
@@ -77,9 +83,15 @@ func getTestStructType(t *testing.T) *types.Named {
 		return typ
 	}
 
-	t.Fatalf("`%v` not found", testStructName)
+	t.Fatalf("`%v` not found", typName)
 
 	return nil
+}
+
+func getTestStructType(t *testing.T) *types.Named {
+	t.Helper()
+
+	return getType(t, testStructName)
 }
 
 func TestToMap_Defaults(t *testing.T) {
@@ -204,5 +216,49 @@ func TestToMap_PointerReceiver(t *testing.T) {
 		printDiff(t, expected.String(), res.String())
 
 		t.Fail()
+	}
+}
+
+func TestToMap_NilType(t *testing.T) {
+	t.Parallel()
+
+	cfg := ToMapConfig{
+		PkgName: "main",
+	}
+
+	err := ToMap(io.Discard, cfg)
+	if err == nil {
+		t.Fatal("expected a non-nil error")
+	}
+}
+
+func TestToMap_MissingPackageName(t *testing.T) {
+	t.Parallel()
+
+	typ := getTestStructType(t)
+
+	cfg := ToMapConfig{
+		Typ: typ,
+	}
+
+	err := ToMap(io.Discard, cfg)
+	if err == nil {
+		t.Fatal("expected to map return an error when it cannot get package name")
+	}
+}
+
+func TestToMap_NoStructType(t *testing.T) {
+	t.Parallel()
+
+	typ := getType(t, nonStructTestTypeName)
+
+	cfg := ToMapConfig{
+		PkgName: "main",
+		Typ:     typ,
+	}
+
+	err := ToMap(io.Discard, cfg)
+	if err == nil {
+		t.Fatal("expected ToMap return error when called with a non struct type")
 	}
 }

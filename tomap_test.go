@@ -361,12 +361,10 @@ package {{.Package}}
 
 func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
 	structMap := map[string]any{"{{.CountKey}}": {{.Receiver}}.Count}
-	var _NameEmpty string
-	if {{.Receiver}}.Name != _NameEmpty {
+	if {{.Receiver}}.Name != "" {
 		structMap["{{.NameKey}}"] = {{.Receiver}}.Name
 	}
-	var _SliceEmpty []float64
-	if {{.Receiver}}.Slice != _SliceEmpty {
+	if len({{.Receiver}}.Slice) > 0 {
 		structMap["{{.SliceKey}}"] = {{.Receiver}}.Slice
 	}
 	return structMap

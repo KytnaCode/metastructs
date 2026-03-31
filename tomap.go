@@ -104,7 +104,7 @@ func ToMap(w io.Writer, cfg ToMapConfig) error {
 
 	const mapID = "structMap"
 
-	stmts := make([]jen.Code, 0, len(omitemptyFields)*2+2)
+	stmts := make([]jen.Code, 0, len(omitemptyFields)+2)
 
 	stmts = append(stmts,
 		jen.Id(mapID).Op(":=").Map(jen.String()).Any().Values(jen.Dict(values)),
@@ -120,14 +120,29 @@ func ToMap(w io.Writer, cfg ToMapConfig) error {
 	for _, key := range keys {
 		field := omitemptyFields[key]
 
-		emptyID := "_" + field.name + "Empty"
+		assignStmt := jen.Id(mapID).Index(jen.Lit(key)).Op("=").Id(MethodReceiver).Dot(field.name)
 
-		stmt1 := jen.Var().Id(emptyID).Id(field.typ.String())
-		stmt2 := jen.If(jen.Id(MethodReceiver).Dot(field.name).Op("!=").Id(emptyID)).Block(
-			jen.Id(mapID).Index(jen.Lit(key)).Op("=").Id(MethodReceiver).Dot(field.name),
-		)
+		var stmt *jen.Statement
 
-		stmts = append(stmts, stmt1, stmt2)
+		switch t := field.typ.Underlying().(type) {
+		case *types.Slice, *types.Map:
+			stmt = jen.If(jen.Len(jen.Id(MethodReceiver).Dot(field.name)).Op(">").Lit(0)).Block(assignStmt)
+		case *types.Pointer, *types.Interface, *types.Signature, *types.Chan:
+			stmt = jen.If(jen.Id(MethodReceiver).Dot(field.name).Op("!=").Nil()).Block(assignStmt)
+		case *types.Basic:
+			switch t.Kind() {
+			case types.String:
+				stmt = jen.If(jen.Id(MethodReceiver).Dot(field.name).Op("!=").Lit("")).Block(assignStmt)
+			case types.Bool:
+				stmt = jen.If(jen.Id(MethodReceiver).Dot(field.name).Op("!=").Lit(false)).Block(assignStmt)
+			default:
+				stmt = jen.If(jen.Id(MethodReceiver).Dot(field.name).Op("!=").Lit(0)).Block(assignStmt)
+			}
+		default:
+			stmt = assignStmt
+		}
+
+		stmts = append(stmts, stmt)
 	}
 
 	stmts = append(stmts, jen.Return(jen.Id(mapID)))

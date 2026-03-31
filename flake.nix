@@ -16,10 +16,12 @@
       default = pkgs.mkShellNoCC {
         buildInputs = with pkgs; [
           git
+          just
 
           # Go packages
           go
           golangci-lint
+          govulncheck
         ];
 
         CGO_ENABLE = 0;

@@ -54,14 +54,14 @@ func getStructFields(structType *types.Struct) []fieldData {
 	return fields
 }
 
-func loadType(ctx context.Context, pkg string, typ string) (*types.Named, error) {
+func loadType(ctx context.Context, pkg string, typ string) (*types.Named, bool, error) {
 	pkgs, err := loadPackages(ctx, pkg)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	if len(pkgs) == 0 {
-		return nil, errors.New("package not found")
+		return nil, false, errors.New("package not found")
 	}
 
 	for _, pkg := range pkgs {
@@ -71,11 +71,11 @@ func loadType(ctx context.Context, pkg string, typ string) (*types.Named, error)
 		}
 
 		if named, ok := obj.Type().(*types.Named); ok {
-			return named, nil
+			return named, pkg.ForTest != "", nil
 		} else {
-			return nil, fmt.Errorf("`%v` is not a struct", obj.Name())
+			return nil, false, fmt.Errorf("`%v` is not a struct", obj.Name())
 		}
 	}
 
-	return nil, errors.New("type not found")
+	return nil, false, errors.New("type not found")
 }

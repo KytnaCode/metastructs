@@ -1,16 +1,66 @@
 package main
 
 import (
+	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-var pkgName string
+var (
+	target     string
+	pkgName    string
+	methodName string
+	tag        string
+)
 
 var rootCmd = &cobra.Command{
 	Use:   "metastructs",
 	Short: "metastructs group boilerplate generators for structs",
+}
+
+var toMapCmd = &cobra.Command{
+	Use:   "to-map",
+	Short: "create a method to convert a struct into a map",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		sourceType, pointer := strings.CutPrefix(target, "*")
+
+		typ, test, err := loadType(cmd.Context(), pkgName, sourceType)
+		if err != nil {
+			return err
+		}
+
+		cfg := ToMapConfig{
+			PkgName:    pkgName,
+			MethodName: methodName,
+			TagName:    &tag,
+			Typ:        typ,
+			Pointer:    pointer,
+		}
+
+		fileName := toMapFileName(sourceType, test)
+
+		path := filepath.Join("./", filepath.Clean(fileName))
+
+		f, err := os.Create(path)
+		if err != nil {
+			return err
+		}
+
+		defer func() {
+			if err := f.Close(); err != nil {
+				log.Println(err)
+			}
+		}()
+
+		if err := ToMap(f, cfg); err != nil {
+			return err
+		}
+
+		return f.Sync()
+	},
 }
 
 func init() {
@@ -20,4 +70,10 @@ func init() {
 		"p",
 		os.Getenv("GOPACKAGE"),
 		"package on which generate code, defaults to GOPACKAGE")
+
+	toMapCmd.Flags().StringVarP(&target, "target", "t", "", "target type")
+	toMapCmd.Flags().StringVarP(&methodName, "method", "m", "ToMap", "out method name")
+	toMapCmd.Flags().StringVarP(&tag, "tag", "s", "to-map", "tag from which read metadata")
+
+	rootCmd.AddCommand(toMapCmd)
 }

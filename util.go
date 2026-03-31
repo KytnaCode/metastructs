@@ -7,7 +7,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func NewFile(pkgName string) *jen.File {
+func newFile(pkgName string) *jen.File {
 	f := jen.NewFile(pkgName)
 
 	f.PackageComment(PACKAGE_COMMENT)
@@ -15,7 +15,7 @@ func NewFile(pkgName string) *jen.File {
 	return f
 }
 
-func LoadPackages(ctx context.Context, paths ...string) ([]*packages.Package, error) {
+func loadPackages(ctx context.Context, paths ...string) ([]*packages.Package, error) {
 	cfg := &packages.Config{
 		Mode:    packages.NeedTypes | packages.NeedImports,
 		Context: ctx,

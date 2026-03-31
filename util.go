@@ -1,7 +1,10 @@
 package main
 
 import (
+	"context"
+
 	"github.com/dave/jennifer/jen"
+	"golang.org/x/tools/go/packages"
 )
 
 func NewFile(pkgName string) *jen.File {
@@ -10,4 +13,13 @@ func NewFile(pkgName string) *jen.File {
 	f.PackageComment(PACKAGE_COMMENT)
 
 	return f
+}
+
+func LoadPackages(ctx context.Context, paths ...string) ([]*packages.Package, error) {
+	cfg := &packages.Config{
+		Mode:    packages.NeedTypes | packages.NeedImports,
+		Context: ctx,
+	}
+
+	return packages.Load(cfg, paths...)
 }

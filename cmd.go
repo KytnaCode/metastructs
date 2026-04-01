@@ -25,6 +25,7 @@ var (
 	partialPrefix, partialSuffix string
 	partialStructName            string
 	partialPreserveTags          bool
+	partialForcePointer          bool
 )
 
 var rootCmd = &cobra.Command{
@@ -132,6 +133,7 @@ var partialCmd = &cobra.Command{
 			Suffix:       partialSuffix,
 			Prefix:       &partialPrefix,
 			PreserveTags: partialPreserveTags,
+			ForcePointer: partialForcePointer,
 		}
 
 		file := filepath.Clean(filename(typ.Obj().Name(), "partial", test))
@@ -176,6 +178,8 @@ func init() {
 	partialCmd.Flags().StringVarP(&partialStructName, "structname", "n", "",
 		"struct name, if set suffix and prefix options will be ignored")
 	partialCmd.Flags().BoolVarP(&partialPreserveTags, "preserve-tags", "r", false, "should partial struct preserve tags")
+	partialCmd.Flags().BoolVarP(&partialForcePointer, "force-pointer", "f", false,
+		"force using a pointer for already nilable types (pointers and interfaces)")
 
 	rootCmd.AddCommand(toMapCmd)
 	rootCmd.AddCommand(nameCmd)

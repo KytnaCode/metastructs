@@ -24,6 +24,7 @@ var nameMethodName string
 var (
 	partialPrefix, partialSuffix string
 	partialStructName            string
+	partialPreserveTags          bool
 )
 
 var rootCmd = &cobra.Command{
@@ -120,11 +121,12 @@ var partialCmd = &cobra.Command{
 		}
 
 		cfg := PartialConfig{
-			Typ:        typ,
-			PkgName:    pkgName,
-			StructName: partialStructName,
-			Suffix:     partialSuffix,
-			Prefix:     &partialPrefix,
+			Typ:          typ,
+			PkgName:      pkgName,
+			StructName:   partialStructName,
+			Suffix:       partialSuffix,
+			Prefix:       &partialPrefix,
+			PreserveTags: partialPreserveTags,
 		}
 
 		file := filepath.Clean(filename(typ.Obj().Name(), "partial", test))
@@ -168,6 +170,7 @@ func init() {
 		"struct name suffix, no effect when used with --structname")
 	partialCmd.Flags().StringVarP(&partialStructName, "structname", "n", "",
 		"struct name, if set suffix and prefix options will be ignored")
+	partialCmd.Flags().BoolVarP(&partialPreserveTags, "preserve-tags", "r", false, "should partial struct preserve tags")
 
 	rootCmd.AddCommand(toMapCmd)
 	rootCmd.AddCommand(nameCmd)

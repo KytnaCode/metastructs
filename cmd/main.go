@@ -1,3 +1,4 @@
+// Package main contains the entrypoint of metastructs and its command definitions.
 package main
 
 import (

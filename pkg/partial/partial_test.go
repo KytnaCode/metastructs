@@ -1,26 +1,31 @@
-package main
+package partial_test
 
 import (
 	"go/types"
+	"reflect"
 	"strings"
 	"testing"
 	"text/template"
 	"time"
 	"unicode/utf8"
+
+	"github.com/kytnacode/metastructs"
+	"github.com/kytnacode/metastructs/pkg/partial"
+	"github.com/kytnacode/metastructs/pkg/util/utiltest"
 )
 
-const testPartialUserName = "testPartialUser"
+var testStructName = reflect.TypeFor[testUser]().Name()
 
 var (
-	expectedPartialTmpl       *template.Template
-	expectedPartialTaggetTmpl *template.Template
+	expectedTmpl       *template.Template
+	expectedTmplTagged *template.Template
 )
 
-var _ = testPartialUser{}
+var _ = testUser{}
 
 type testType string
 
-type testPartialUser struct {
+type testUser struct {
 	Name        string       `db:"name,omitempty" json:"name"`
 	Pass        string       `db:"pass"           json:"pass"`
 	Registered  time.Time    `db:"-"              json:"registered"`
@@ -31,7 +36,7 @@ type testPartialUser struct {
 func init() {
 	var err error
 
-	expectedPartialTmpl, err = template.New("expected").Parse(`// {{.Comment}}
+	expectedTmpl, err = template.New("expected").Parse(`// {{.Comment}}
 package {{.Package}}
 
 import (
@@ -51,7 +56,7 @@ type {{.StructName}} struct {
 		panic(err)
 	}
 
-	expectedPartialTaggetTmpl, err = template.New("expected").Parse(`// {{.Comment}}
+	expectedTmplTagged, err = template.New("expected").Parse(`// {{.Comment}}
 package {{.Package}}
 
 import (
@@ -108,9 +113,9 @@ func TestPartial(t *testing.T) {
 
 	for name, data := range testCases {
 		t.Run(name, func(t *testing.T) {
-			typ := getType(t, testPartialUserName)
+			typ := utiltest.GetType(t, testStructName)
 
-			cfg := PartialConfig{
+			cfg := partial.Config{
 				Typ:        typ,
 				PkgName:    data.pkgName,
 				StructName: data.structName,
@@ -120,7 +125,7 @@ func TestPartial(t *testing.T) {
 
 			var res strings.Builder
 
-			if err := Partial(&res, cfg); err != nil {
+			if err := partial.Partial(&res, cfg); err != nil {
 				t.Fatal(err)
 			}
 
@@ -134,8 +139,8 @@ func TestPartial(t *testing.T) {
 				structName = *cfg.Prefix + strings.ToUpper(string(r)) + name[size:] + cfg.Suffix
 			}
 
-			err := expectedPartialTmpl.Execute(&expected, map[string]any{
-				"Comment":    PackageComment,
+			err := expectedTmpl.Execute(&expected, map[string]any{
+				"Comment":    metastructs.PackageComment,
 				"Package":    data.pkgName,
 				"StructName": structName,
 			})
@@ -144,7 +149,7 @@ func TestPartial(t *testing.T) {
 			}
 
 			if res.String() != expected.String() {
-				printDiff(t, expected.String(), res.String())
+				utiltest.PrintDiff(t, expected.String(), res.String())
 
 				t.FailNow()
 			}
@@ -155,13 +160,13 @@ func TestPartial(t *testing.T) {
 func TestPartial_Tagget(t *testing.T) {
 	t.Parallel()
 
-	typ := getType(t, testPartialUserName)
+	typ := utiltest.GetType(t, testStructName)
 
 	const pkgName = "main"
 
 	const structName = "MyStructName"
 
-	cfg := PartialConfig{
+	cfg := partial.Config{
 		Typ:          typ,
 		PkgName:      pkgName,
 		StructName:   structName,
@@ -170,15 +175,15 @@ func TestPartial_Tagget(t *testing.T) {
 
 	var res strings.Builder
 
-	if err := Partial(&res, cfg); err != nil {
+	if err := partial.Partial(&res, cfg); err != nil {
 		t.Fatal(err)
 	}
 
 	var expected strings.Builder
 
 	//nolint:gosec // No hardcoded credentials, PassTag is just dummy data.
-	err := expectedPartialTaggetTmpl.Execute(&expected, map[string]any{
-		"Comment":       PackageComment,
+	err := expectedTmplTagged.Execute(&expected, map[string]any{
+		"Comment":       metastructs.PackageComment,
 		"Package":       pkgName,
 		"StructName":    structName,
 		"NameTag":       "`db:\"name,omitempty\" json:\"name\"`",
@@ -192,7 +197,7 @@ func TestPartial_Tagget(t *testing.T) {
 	}
 
 	if res.String() != expected.String() {
-		printDiff(t, expected.String(), res.String())
+		utiltest.PrintDiff(t, expected.String(), res.String())
 
 		t.FailNow()
 	}

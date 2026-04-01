@@ -1,18 +1,23 @@
-package main
+package tomap_test
 
 import (
 	"go/types"
 	"io"
+	"reflect"
 	"strings"
 	"testing"
 	"text/template"
+
+	"github.com/kytnacode/metastructs"
+	"github.com/kytnacode/metastructs/pkg/tomap"
+	"github.com/kytnacode/metastructs/pkg/util/utiltest"
 )
 
-const (
-	testStructName          = "testStruct"
-	taggedTestStructName    = "taggedTestStruct"
-	omitemptyTestStructName = "omitemptyTestStruct"
-	nonStructTestTypeName   = "nonStructTestType"
+var (
+	testStructName          = reflect.TypeFor[testStruct]().Name()
+	taggedTestStructName    = reflect.TypeFor[taggedTestStruct]().Name()
+	omitemptyTestStructName = reflect.TypeFor[omitemptyTestStruct]().Name()
+	nonStructTestTypeName   = reflect.TypeFor[nonStructTestType]().Name()
 )
 
 var expectedTmpl *template.Template
@@ -78,7 +83,7 @@ func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
 func getTestStructType(t *testing.T) *types.Named {
 	t.Helper()
 
-	return getType(t, testStructName)
+	return utiltest.GetType(t, testStructName)
 }
 
 func TestToMap_Defaults(t *testing.T) {
@@ -88,14 +93,14 @@ func TestToMap_Defaults(t *testing.T) {
 
 	const pkgName = "main"
 
-	cfg := ToMapConfig{
+	cfg := tomap.Config{
 		PkgName: pkgName,
 		Typ:     typ,
 	}
 
 	var res strings.Builder
 
-	if err := ToMap(&res, cfg); err != nil {
+	if err := tomap.ToMap(&res, cfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -103,10 +108,10 @@ func TestToMap_Defaults(t *testing.T) {
 
 	err := expectedTmpl.Execute(&expected, expectedData{
 		Package:    pkgName,
-		Comment:    PackageComment,
-		Receiver:   MethodReceiver,
+		Comment:    metastructs.PackageComment,
+		Receiver:   metastructs.MethodReceiver,
 		RecvType:   typ.Obj().Name(),
-		MethodName: DefaultMethodName,
+		MethodName: tomap.DefaultMethodName,
 		NameKey:    "Name",
 		CountKey:   "Count",
 		SliceKey:   "Slice",
@@ -116,7 +121,7 @@ func TestToMap_Defaults(t *testing.T) {
 	}
 
 	if res.String() != expected.String() {
-		printDiff(t, expected.String(), res.String())
+		utiltest.PrintDiff(t, expected.String(), res.String())
 		t.Fail()
 	}
 }
@@ -130,7 +135,7 @@ func TestToMap_CustomMethodName(t *testing.T) {
 
 	const methodName = "CustomMethodName"
 
-	cfg := ToMapConfig{
+	cfg := tomap.Config{
 		PkgName:    pkgName,
 		Typ:        typ,
 		MethodName: methodName,
@@ -138,7 +143,7 @@ func TestToMap_CustomMethodName(t *testing.T) {
 
 	var res strings.Builder
 
-	if err := ToMap(&res, cfg); err != nil {
+	if err := tomap.ToMap(&res, cfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -146,8 +151,8 @@ func TestToMap_CustomMethodName(t *testing.T) {
 
 	err := expectedTmpl.Execute(&expected, expectedData{
 		Package:    pkgName,
-		Comment:    PackageComment,
-		Receiver:   MethodReceiver,
+		Comment:    metastructs.PackageComment,
+		Receiver:   metastructs.MethodReceiver,
 		RecvType:   typ.Obj().Name(),
 		MethodName: methodName,
 		NameKey:    "Name",
@@ -159,7 +164,7 @@ func TestToMap_CustomMethodName(t *testing.T) {
 	}
 
 	if res.String() != expected.String() {
-		printDiff(t, expected.String(), res.String())
+		utiltest.PrintDiff(t, expected.String(), res.String())
 		t.Fail()
 	}
 }
@@ -171,7 +176,7 @@ func TestToMap_PointerReceiver(t *testing.T) {
 
 	const pkgName = "models"
 
-	cfg := ToMapConfig{
+	cfg := tomap.Config{
 		PkgName: pkgName,
 		Typ:     typ,
 		Pointer: true,
@@ -179,7 +184,7 @@ func TestToMap_PointerReceiver(t *testing.T) {
 
 	var res strings.Builder
 
-	if err := ToMap(&res, cfg); err != nil {
+	if err := tomap.ToMap(&res, cfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -187,10 +192,10 @@ func TestToMap_PointerReceiver(t *testing.T) {
 
 	err := expectedTmpl.Execute(&expected, expectedData{
 		Package:    pkgName,
-		Comment:    PackageComment,
-		Receiver:   MethodReceiver,
+		Comment:    metastructs.PackageComment,
+		Receiver:   metastructs.MethodReceiver,
 		RecvType:   "*" + typ.Obj().Name(),
-		MethodName: DefaultMethodName,
+		MethodName: tomap.DefaultMethodName,
 		NameKey:    "Name",
 		CountKey:   "Count",
 		SliceKey:   "Slice",
@@ -200,7 +205,7 @@ func TestToMap_PointerReceiver(t *testing.T) {
 	}
 
 	if res.String() != expected.String() {
-		printDiff(t, expected.String(), res.String())
+		utiltest.PrintDiff(t, expected.String(), res.String())
 
 		t.Fail()
 	}
@@ -209,11 +214,11 @@ func TestToMap_PointerReceiver(t *testing.T) {
 func TestToMap_NilType(t *testing.T) {
 	t.Parallel()
 
-	cfg := ToMapConfig{
+	cfg := tomap.Config{
 		PkgName: "main",
 	}
 
-	err := ToMap(io.Discard, cfg)
+	err := tomap.ToMap(io.Discard, cfg)
 	if err == nil {
 		t.Fatal("expected a non-nil error")
 	}
@@ -224,11 +229,11 @@ func TestToMap_MissingPackageName(t *testing.T) {
 
 	typ := getTestStructType(t)
 
-	cfg := ToMapConfig{
+	cfg := tomap.Config{
 		Typ: typ,
 	}
 
-	err := ToMap(io.Discard, cfg)
+	err := tomap.ToMap(io.Discard, cfg)
 	if err == nil {
 		t.Fatal("expected to map return an error when it cannot get package name")
 	}
@@ -237,14 +242,14 @@ func TestToMap_MissingPackageName(t *testing.T) {
 func TestToMap_NoStructType(t *testing.T) {
 	t.Parallel()
 
-	typ := getType(t, nonStructTestTypeName)
+	typ := utiltest.GetType(t, nonStructTestTypeName)
 
-	cfg := ToMapConfig{
+	cfg := tomap.Config{
 		PkgName: "main",
 		Typ:     typ,
 	}
 
-	err := ToMap(io.Discard, cfg)
+	err := tomap.ToMap(io.Discard, cfg)
 	if err == nil {
 		t.Fatal("expected ToMap return error when called with a non struct type")
 	}
@@ -253,18 +258,18 @@ func TestToMap_NoStructType(t *testing.T) {
 func TestToMap_Tags(t *testing.T) {
 	t.Parallel()
 
-	typ := getType(t, taggedTestStructName)
+	typ := utiltest.GetType(t, taggedTestStructName)
 
 	const pkgMain = "main"
 
-	cfg := ToMapConfig{
+	cfg := tomap.Config{
 		PkgName: pkgMain,
 		Typ:     typ,
 	}
 
 	var res strings.Builder
 
-	if err := ToMap(&res, cfg); err != nil {
+	if err := tomap.ToMap(&res, cfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -287,10 +292,10 @@ func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
 
 	err = expectedTmpl.Execute(&expected, expectedData{
 		Package:    pkgMain,
-		Comment:    PackageComment,
-		Receiver:   MethodReceiver,
+		Comment:    metastructs.PackageComment,
+		Receiver:   metastructs.MethodReceiver,
 		RecvType:   typ.Obj().Name(),
-		MethodName: DefaultMethodName,
+		MethodName: tomap.DefaultMethodName,
 		NameKey:    "name",
 		CountKey:   "count",
 	})
@@ -299,7 +304,7 @@ func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
 	}
 
 	if res.String() != expected.String() {
-		printDiff(t, expected.String(), res.String())
+		utiltest.PrintDiff(t, expected.String(), res.String())
 
 		t.Fail()
 	}
@@ -308,18 +313,18 @@ func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
 func TestToMap_OmitEmptyFields(t *testing.T) {
 	t.Parallel()
 
-	typ := getType(t, omitemptyTestStructName)
+	typ := utiltest.GetType(t, omitemptyTestStructName)
 
 	const pkgName = "main"
 
-	cfg := ToMapConfig{
+	cfg := tomap.Config{
 		PkgName: pkgName,
 		Typ:     typ,
 	}
 
 	var res strings.Builder
 
-	if err := ToMap(&res, cfg); err != nil {
+	if err := tomap.ToMap(&res, cfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -345,10 +350,10 @@ func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
 
 	err = expectedTmpl.Execute(&expected, expectedData{
 		Package:    pkgName,
-		Comment:    PackageComment,
-		Receiver:   MethodReceiver,
+		Comment:    metastructs.PackageComment,
+		Receiver:   metastructs.MethodReceiver,
 		RecvType:   typ.Obj().Name(),
-		MethodName: DefaultMethodName,
+		MethodName: tomap.DefaultMethodName,
 		CountKey:   "Count",
 		NameKey:    "Name",
 		SliceKey:   "slice",
@@ -358,7 +363,7 @@ func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
 	}
 
 	if res.String() != expected.String() {
-		printDiff(t, expected.String(), res.String())
+		utiltest.PrintDiff(t, expected.String(), res.String())
 
 		t.Fail()
 	}

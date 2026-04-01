@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"go/types"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -91,4 +92,13 @@ func filename(strct, suffix string, test bool) string {
 	path := fmt.Sprintf("%v_%v%v.go", strings.ToLower(strct), suffix, testSuffix)
 
 	return filepath.Join("./", filepath.Clean(path))
+}
+
+func getPkgName(pkg string) string {
+	p := pkg
+	if p == "." {
+		return os.Getenv("GOPACKAGE")
+	}
+
+	return p
 }

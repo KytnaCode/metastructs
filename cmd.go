@@ -45,7 +45,7 @@ var toMapCmd = &cobra.Command{
 		}
 
 		cfg := ToMapConfig{
-			PkgName:    pkgName,
+			PkgName:    getPkgName(pkgName),
 			MethodName: toMapMethodName,
 			TagName:    &toMapTag,
 			Typ:        typ,
@@ -86,7 +86,7 @@ var nameCmd = &cobra.Command{
 
 		cfg := StructNameConfig{
 			Typ:        typ,
-			PkgName:    pkgName,
+			PkgName:    getPkgName(pkgName),
 			MethodName: nameMethodName,
 			Pointer:    pointer,
 		}
@@ -121,14 +121,9 @@ var partialCmd = &cobra.Command{
 			return err
 		}
 
-		pkg := pkgName
-		if pkg == "." {
-			pkg = os.Getenv("GOPACKAGE")
-		}
-
 		cfg := PartialConfig{
 			Typ:          typ,
-			PkgName:      pkg,
+			PkgName:      getPkgName(pkgName),
 			StructName:   partialStructName,
 			Suffix:       partialSuffix,
 			Prefix:       &partialPrefix,

@@ -58,14 +58,28 @@ func Partial(w io.Writer, cfg PartialConfig) error {
 		field := structType.Field(i)
 		structField := jen.Id(field.Name()).Op("*")
 
-		if named, ok := field.Type().(*types.Named); ok {
-			if named.Obj().Pkg().Path() == cfg.Typ.Obj().Pkg().Path() {
-				structField.Id(named.Obj().Name())
-			} else {
-				structField.Qual(named.Obj().Pkg().Path(), named.Obj().Name())
+		typ := field.Type()
+
+		for {
+			if named, ok := typ.(*types.Named); ok {
+				if named.Obj().Pkg().Path() == cfg.Typ.Obj().Pkg().Path() {
+					structField.Id(named.Obj().Name())
+				} else {
+					structField.Qual(named.Obj().Pkg().Path(), named.Obj().Name())
+				}
+
+				break
+			} else if basic, ok := typ.(*types.Basic); ok {
+				structField.Id(basic.String())
+
+				break
+			} else if pointer, ok := typ.(*types.Pointer); ok {
+				typ = pointer.Elem()
+
+				continue
 			}
-		} else {
-			structField.Id(field.Type().String())
+
+			return fmt.Errorf("unsupported type: `%v`", typ.String())
 		}
 
 		if cfg.PreserveTags {

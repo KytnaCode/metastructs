@@ -24,7 +24,7 @@ Metastructs provides three main commands: `to-map`, `name`, and `partial`.
 
 ### Global Flags
 
-- `-p, --pkg`: Package name (defaults to `$GOPACKAGE` environment variable)
+- `-p, --pkg`: Package name (defaults to current package)
 - `-t, --target`: Target struct type name (required)
 
 ### to-map Command

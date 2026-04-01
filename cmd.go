@@ -120,9 +120,14 @@ var partialCmd = &cobra.Command{
 			return err
 		}
 
+		pkg := pkgName
+		if pkg == "." {
+			pkg = os.Getenv("GOPACKAGE")
+		}
+
 		cfg := PartialConfig{
 			Typ:          typ,
-			PkgName:      pkgName,
+			PkgName:      pkg,
 			StructName:   partialStructName,
 			Suffix:       partialSuffix,
 			Prefix:       &partialPrefix,
@@ -155,8 +160,8 @@ func init() {
 		&pkgName,
 		"pkg",
 		"p",
-		os.Getenv("GOPACKAGE"),
-		"package on which generate code, defaults to GOPACKAGE")
+		".",
+		"package on which generate code, defaults to current package")
 	rootCmd.PersistentFlags().StringVarP(&target, "target", "t", "", "target type")
 
 	toMapCmd.Flags().StringVarP(&toMapMethodName, "method", "m", DefaultMethodName, "out method name")

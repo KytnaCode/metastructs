@@ -74,6 +74,10 @@ func Partial(w io.Writer, cfg Config) error {
 					indirection--
 				}
 
+				if indirection == 0 {
+					structField.Op("*")
+				}
+
 				for range indirection {
 					structField.Op("*")
 				}

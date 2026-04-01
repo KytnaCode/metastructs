@@ -19,6 +19,7 @@ type PartialConfig struct {
 	StructName string
 	Suffix     *string
 	Prefix     string
+	IgnoreTags bool
 }
 
 func Partial(w io.Writer, cfg PartialConfig) error {
@@ -53,7 +54,8 @@ func Partial(w io.Writer, cfg PartialConfig) error {
 
 	fields := make([]jen.Code, 0, structType.NumFields())
 
-	for field := range structType.Fields() {
+	for i := range structType.NumFields() {
+		field := structType.Field(i)
 		structField := jen.Id(field.Name()).Op("*")
 
 		if named, ok := field.Type().(*types.Named); ok {
@@ -64,6 +66,10 @@ func Partial(w io.Writer, cfg PartialConfig) error {
 			}
 		} else {
 			structField.Id(field.Type().String())
+		}
+
+		if !cfg.IgnoreTags {
+			structField.Op("`" + structType.Tag(i) + "`")
 		}
 
 		fields = append(fields, structField)

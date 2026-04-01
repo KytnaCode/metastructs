@@ -19,7 +19,7 @@ type PartialConfig struct {
 	StructName   string
 	Suffix       string
 	Prefix       *string
-	PerserveTags bool
+	PreserveTags bool
 }
 
 func Partial(w io.Writer, cfg PartialConfig) error {
@@ -68,7 +68,7 @@ func Partial(w io.Writer, cfg PartialConfig) error {
 			structField.Id(field.Type().String())
 		}
 
-		if cfg.PerserveTags {
+		if cfg.PreserveTags {
 			structField.Op("`" + structType.Tag(i) + "`")
 		}
 

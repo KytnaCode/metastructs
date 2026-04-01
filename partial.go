@@ -11,14 +11,14 @@ import (
 	"github.com/dave/jennifer/jen"
 )
 
-const DefaultPartialSuffix = "Partial"
+const DefaultPartialPrefix = "Partial"
 
 type PartialConfig struct {
 	Typ          *types.Named
 	PkgName      string
 	StructName   string
-	Suffix       *string
-	Prefix       string
+	Suffix       string
+	Prefix       *string
 	PerserveTags bool
 }
 
@@ -31,16 +31,16 @@ func Partial(w io.Writer, cfg PartialConfig) error {
 		return errors.New("cfg.Typ is required")
 	}
 
-	if cfg.Suffix == nil {
-		cfg.Suffix = new(string)
-		*cfg.Suffix = DefaultPartialSuffix
+	if cfg.Prefix == nil {
+		cfg.Prefix = new(string)
+		*cfg.Prefix = DefaultPartialPrefix
 	}
 
 	if cfg.StructName == "" {
 		name := cfg.Typ.Obj().Name()
 		r, size := utf8.DecodeRuneInString(name)
 
-		cfg.StructName = cfg.Prefix + strings.ToUpper(string(r)) + name[size:] + *cfg.Suffix
+		cfg.StructName = *cfg.Prefix + strings.ToUpper(string(r)) + name[size:] + cfg.Suffix
 	}
 
 	if cfg.StructName == cfg.Typ.Obj().Name() {

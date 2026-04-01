@@ -104,9 +104,8 @@ func TestPartial(t *testing.T) {
 				Typ:        typ,
 				PkgName:    data.pkgName,
 				StructName: data.structName,
-				Suffix:     &data.prefix,
-				Prefix:     data.prefix,
-				IgnoreTags: true,
+				Suffix:     data.suffix,
+				Prefix:     &data.prefix,
 			}
 
 			var res strings.Builder
@@ -122,7 +121,7 @@ func TestPartial(t *testing.T) {
 				name := cfg.Typ.Obj().Name()
 				r, size := utf8.DecodeRuneInString(name)
 
-				structName = cfg.Prefix + strings.ToUpper(string(r)) + name[size:] + *cfg.Suffix
+				structName = *cfg.Prefix + strings.ToUpper(string(r)) + name[size:] + cfg.Suffix
 			}
 
 			err := expectedPartialTmpl.Execute(&expected, map[string]any{

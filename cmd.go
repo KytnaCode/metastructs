@@ -123,8 +123,8 @@ var partialCmd = &cobra.Command{
 			Typ:        typ,
 			PkgName:    pkgName,
 			StructName: partialStructName,
-			Suffix:     &partialSuffix,
-			Prefix:     partialPrefix,
+			Suffix:     partialSuffix,
+			Prefix:     &partialPrefix,
 		}
 
 		file := filepath.Clean(filename(typ.Obj().Name(), "partial", test))
@@ -157,12 +157,12 @@ func init() {
 		"package on which generate code, defaults to GOPACKAGE")
 	rootCmd.PersistentFlags().StringVarP(&target, "target", "t", "", "target type")
 
-	toMapCmd.Flags().StringVarP(&toMapMethodName, "method", "m", "ToMap", "out method name")
-	toMapCmd.Flags().StringVarP(&toMapTag, "tag", "s", "to-map", "tag from which read metadata")
+	toMapCmd.Flags().StringVarP(&toMapMethodName, "method", "m", DefaultMethodName, "out method name")
+	toMapCmd.Flags().StringVarP(&toMapTag, "tag", "s", DefaultTagName, "tag from which read metadata")
 
 	nameCmd.Flags().StringVarP(&nameMethodName, "method", "m", DefaultNameMethodName, "out method name")
 
-	partialCmd.Flags().StringVarP(&partialPrefix, "prefix", "e", "Partial",
+	partialCmd.Flags().StringVarP(&partialPrefix, "prefix", "e", DefaultPartialPrefix,
 		"struct name prefix, no effect when used with --structname")
 	partialCmd.Flags().StringVarP(&partialSuffix, "suffix", "s", "",
 		"struct name suffix, no effect when used with --structname")

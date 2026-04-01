@@ -14,12 +14,12 @@ import (
 const DefaultPartialSuffix = "Partial"
 
 type PartialConfig struct {
-	Typ        *types.Named
-	PkgName    string
-	StructName string
-	Suffix     *string
-	Prefix     string
-	IgnoreTags bool
+	Typ          *types.Named
+	PkgName      string
+	StructName   string
+	Suffix       *string
+	Prefix       string
+	PerserveTags bool
 }
 
 func Partial(w io.Writer, cfg PartialConfig) error {
@@ -68,7 +68,7 @@ func Partial(w io.Writer, cfg PartialConfig) error {
 			structField.Id(field.Type().String())
 		}
 
-		if !cfg.IgnoreTags {
+		if cfg.PerserveTags {
 			structField.Op("`" + structType.Tag(i) + "`")
 		}
 

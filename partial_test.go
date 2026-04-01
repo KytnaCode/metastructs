@@ -1,6 +1,7 @@
 package main
 
 import (
+	"go/types"
 	"strings"
 	"testing"
 	"text/template"
@@ -20,10 +21,11 @@ var _ = testPartialUser{}
 type testType string
 
 type testPartialUser struct {
-	Name       string    `db:"name,omitempty" json:"name"`
-	Pass       string    `db:"pass"           json:"pass"`
-	Registered time.Time `db:"-"              json:"registered"`
-	ExtraData  testType  `db:",omitempty"     json:",omitempty"`
+	Name        string       `db:"name,omitempty" json:"name"`
+	Pass        string       `db:"pass"           json:"pass"`
+	Registered  time.Time    `db:"-"              json:"registered"`
+	ExtraData   testType     `db:",omitempty"     json:",omitempty"`
+	PointerType *types.Named `db:"ptr"            json:"ptr"`
 }
 
 func init() {
@@ -32,13 +34,17 @@ func init() {
 	expectedPartialTmpl, err = template.New("expected").Parse(`// {{.Comment}}
 package {{.Package}}
 
-import "time"
+import (
+	"go/types"
+	"time"
+)
 
 type {{.StructName}} struct {
-	Name       *string
-	Pass       *string
-	Registered *time.Time
-	ExtraData  *testType
+	Name        *string
+	Pass        *string
+	Registered  *time.Time
+	ExtraData   *testType
+	PointerType *types.Named
 }
 `)
 	if err != nil {
@@ -48,13 +54,17 @@ type {{.StructName}} struct {
 	expectedPartialTaggetTmpl, err = template.New("expected").Parse(`// {{.Comment}}
 package {{.Package}}
 
-import "time"
+import (
+	"go/types"
+	"time"
+)
 
 type {{.StructName}} struct {
-	Name       *string    {{.NameTag}}
-	Pass       *string    {{.PassTag}}
-	Registered *time.Time {{.RegisteredTag}}
-	ExtraData  *testType  {{.ExtraTag}}
+	Name        *string      {{.NameTag}}
+	Pass        *string      {{.PassTag}}
+	Registered  *time.Time   {{.RegisteredTag}}
+	ExtraData   *testType    {{.ExtraTag}}
+	PointerType *types.Named {{.PtrTag}}
 }
 `)
 	if err != nil {
@@ -175,6 +185,7 @@ func TestPartial_Tagget(t *testing.T) {
 		"PassTag":       "`db:\"pass\"           json:\"pass\"`",
 		"RegisteredTag": "`db:\"-\"              json:\"registered\"`",
 		"ExtraTag":      "`db:\",omitempty\"     json:\",omitempty\"`",
+		"PtrTag":        "`db:\"ptr\"            json:\"ptr\"`",
 	})
 	if err != nil {
 		t.Fatal(err)

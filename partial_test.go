@@ -152,9 +152,10 @@ func TestPartial_Tagget(t *testing.T) {
 	const structName = "MyStructName"
 
 	cfg := PartialConfig{
-		Typ:        typ,
-		PkgName:    pkgName,
-		StructName: structName,
+		Typ:          typ,
+		PkgName:      pkgName,
+		StructName:   structName,
+		PreserveTags: true,
 	}
 
 	var res strings.Builder

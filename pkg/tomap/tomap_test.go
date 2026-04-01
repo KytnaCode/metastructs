@@ -11,6 +11,7 @@ import (
 	"github.com/kytnacode/metastructs"
 	"github.com/kytnacode/metastructs/pkg/tomap"
 	"github.com/kytnacode/metastructs/pkg/util/utiltest"
+	"github.com/kytnacode/metastructs/testdata"
 )
 
 var (
@@ -367,4 +368,52 @@ func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
 
 		t.Fail()
 	}
+}
+
+func BenchmarkToMap(b *testing.B) {
+	data := testdata.ToMapBench{
+		Str1:  "hello world",
+		Str2:  "My name is Arya!",
+		Str3:  "What's yours?",
+		Bool:  true,
+		Float: 3.1416,
+		Int:   8191, // Fifth Mersenne Prime.
+		Uint:  57,   // The best prime number.
+		// 09-F9 code.
+		Slice: []string{"09", "F9", "11", "02", "9D", "74", "E3", "5B", "D8", "41", "56", "C5", "63", "56", "88", "C0"},
+		Map: map[float64]string{
+			2.717:  "Bob",
+			3.1416: "Alice",
+			1.414:  "Eva",
+		},
+		AnonymousStruct: struct {
+			Field1 string
+			Field2 float64
+		}{
+			Field1: "Hi, my hame is Arya!",
+			Field2: 1 + 1/(1+(1/(1+1))),
+		},
+	}
+
+	b.ResetTimer()
+
+	b.Run("ToMap_GeneratedMethod", func(b *testing.B) {
+		for b.Loop() {
+			_ = data.ToMap()
+		}
+	})
+
+	b.Run("ToMap_Reflection", func(b *testing.B) {
+		for b.Loop() {
+			v := reflect.ValueOf(data)
+
+			out := make(map[string]any, v.NumField())
+
+			for i := range v.NumField() {
+				out[v.Type().Field(i).Name] = v.Field(i).Interface()
+			}
+
+			_ = out
+		}
+	})
 }

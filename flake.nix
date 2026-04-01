@@ -27,5 +27,26 @@
         CGO_ENABLE = 0;
       };
     });
+
+    packages = eachSystem (pkgs: rec {
+      default = metastructs;
+
+      metastructs = pkgs.buildGoModule (finalAttrs: {
+        pname = "metastructs";
+        version = "0.0.1";
+
+        src = ./.;
+
+        vendorHash = "sha256-JeMJffFR9ZcVHd0mJu0Xj3Ja45uDwgGoP18tWLiEfrg=";
+
+        meta = {
+          description = "Code generator for implementing boilerplate struct methods";
+          homepage = "https:///github.com/kytnacode/metastructs";
+          license = pkgs.lib.licenses.mit;
+        };
+
+        env.CGO_ENABLED = 0;
+      });
+    });
   };
 }

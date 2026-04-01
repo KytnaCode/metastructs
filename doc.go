@@ -1,2 +1,2 @@
-// Package main contains the entrypoint and the generators for metastructs tool.
-package main
+// Package metastructs contains several generator for boilerplate code.
+package metastructs

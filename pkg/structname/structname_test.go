@@ -1,31 +1,36 @@
-package main
+package structname_test
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 	"text/template"
+
+	"github.com/kytnacode/metastructs"
+	"github.com/kytnacode/metastructs/pkg/structname"
+	"github.com/kytnacode/metastructs/pkg/util/utiltest"
 )
-
-const (
-	testNameStructName = "testNameStruct"
-	testNameIntName    = "testNameInt"
-)
-
-type testNameStruct struct{}
-
-type testNameInt int
 
 var (
-	_ = testNameStruct{}
-	_ = testNameInt(0)
+	testStructName = reflect.TypeFor[testStruct]().Name()
+	testIntName    = reflect.TypeFor[testInt]().Name()
 )
 
-var expectedNameTmpl *template.Template
+type testStruct struct{}
+
+type testInt int
+
+var (
+	_ = testStruct{}
+	_ = testInt(0)
+)
+
+var expectedTmpl *template.Template
 
 func init() {
 	var err error
 
-	expectedNameTmpl, err = template.New("expected").Parse(`// {{.Comment}}
+	expectedTmpl, err = template.New("expected").Parse(`// {{.Comment}}
 package {{.Package}}
 
 func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() string {
@@ -52,35 +57,35 @@ func TestName(t *testing.T) {
 		"pkg-main_no-pointer_def-method_struct": {
 			pkg:      "main",
 			pointer:  false,
-			recvType: testNameStructName,
-			name:     testNameStructName,
+			recvType: testStructName,
+			name:     testStructName,
 		},
 		"pkg-abc_no-pointer_def-method_struct": {
 			pkg:      "abc",
 			pointer:  false,
-			recvType: testNameStructName,
-			name:     testNameStructName,
+			recvType: testStructName,
+			name:     testStructName,
 		},
 		"pkg-main_pointer_def-method_struct": {
 			pkg:      "main",
 			pointer:  true,
-			recvType: testNameStructName,
-			name:     testNameStructName,
+			recvType: testStructName,
+			name:     testStructName,
 		},
 		"pkg-main_no-pointer_custom-method_int": {
 			pkg:        "main",
 			pointer:    false,
-			recvType:   testNameIntName,
-			name:       testNameIntName,
+			recvType:   testIntName,
+			name:       testIntName,
 			methodName: "IntName",
 		},
 	}
 
 	for name, data := range testCases {
 		t.Run(name, func(t *testing.T) {
-			named := getType(t, data.name)
+			named := utiltest.GetType(t, data.name)
 
-			cfg := StructNameConfig{
+			cfg := structname.Config{
 				Typ:        named,
 				PkgName:    data.pkg,
 				MethodName: data.methodName,
@@ -89,7 +94,7 @@ func TestName(t *testing.T) {
 
 			var res strings.Builder
 
-			if err := StructName(&res, cfg); err != nil {
+			if err := structname.StructName(&res, cfg); err != nil {
 				t.Fatal(err)
 			}
 
@@ -101,17 +106,17 @@ func TestName(t *testing.T) {
 				recvType += "*"
 			}
 
-			methodName := DefaultNameMethodName
+			methodName := structname.DefaultMethodName
 			if data.methodName != "" {
 				methodName = data.methodName
 			}
 
 			recvType += data.recvType
 
-			err := expectedNameTmpl.Execute(&expected, map[string]any{
+			err := expectedTmpl.Execute(&expected, map[string]any{
 				"Name":       data.name,
-				"Comment":    PackageComment,
-				"Receiver":   MethodReceiver,
+				"Comment":    metastructs.PackageComment,
+				"Receiver":   metastructs.MethodReceiver,
 				"MethodName": methodName,
 				"RecvType":   recvType,
 				"Package":    data.pkg,
@@ -121,7 +126,7 @@ func TestName(t *testing.T) {
 			}
 
 			if res.String() != expected.String() {
-				printDiff(t, expected.String(), res.String())
+				utiltest.PrintDiff(t, expected.String(), res.String())
 
 				t.FailNow()
 			}

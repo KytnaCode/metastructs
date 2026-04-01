@@ -10,10 +10,20 @@ import (
 )
 
 var (
-	target     string
-	pkgName    string
-	methodName string
-	tag        string
+	target  string
+	pkgName string
+)
+
+var (
+	toMapMethodName string
+	toMapTag        string
+)
+
+var nameMethodName string
+
+var (
+	partialPrefix, partialSuffix string
+	partialStructName            string
 )
 
 var rootCmd = &cobra.Command{
@@ -34,8 +44,8 @@ var toMapCmd = &cobra.Command{
 
 		cfg := ToMapConfig{
 			PkgName:    pkgName,
-			MethodName: methodName,
-			TagName:    &tag,
+			MethodName: toMapMethodName,
+			TagName:    &toMapTag,
 			Typ:        typ,
 			Pointer:    pointer,
 		}
@@ -75,7 +85,7 @@ var nameCmd = &cobra.Command{
 		cfg := StructNameConfig{
 			Typ:        typ,
 			PkgName:    pkgName,
-			MethodName: methodName,
+			MethodName: nameMethodName,
 			Pointer:    pointer,
 		}
 
@@ -100,6 +110,44 @@ var nameCmd = &cobra.Command{
 	},
 }
 
+var partialCmd = &cobra.Command{
+	Use:   "partial",
+	Short: "generate a partial struct",
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		typ, test, err := loadType(cmd.Context(), pkgName, target)
+		if err != nil {
+			return err
+		}
+
+		cfg := PartialConfig{
+			Typ:        typ,
+			PkgName:    pkgName,
+			StructName: partialStructName,
+			Suffix:     &partialSuffix,
+			Prefix:     partialPrefix,
+		}
+
+		file := filepath.Clean(filename(typ.Obj().Name(), "partial", test))
+
+		f, err := os.Create(file)
+		if err != nil {
+			return err
+		}
+
+		defer func() {
+			if err := f.Close(); err != nil {
+				log.Println(err)
+			}
+		}()
+
+		if err := Partial(f, cfg); err != nil {
+			return err
+		}
+
+		return f.Sync()
+	},
+}
+
 func init() {
 	rootCmd.PersistentFlags().StringVarP(
 		&pkgName,
@@ -107,14 +155,21 @@ func init() {
 		"p",
 		os.Getenv("GOPACKAGE"),
 		"package on which generate code, defaults to GOPACKAGE")
+	rootCmd.PersistentFlags().StringVarP(&target, "target", "t", "", "target type")
 
-	toMapCmd.Flags().StringVarP(&target, "target", "t", "", "target type")
-	toMapCmd.Flags().StringVarP(&methodName, "method", "m", "ToMap", "out method name")
-	toMapCmd.Flags().StringVarP(&tag, "tag", "s", "to-map", "tag from which read metadata")
+	toMapCmd.Flags().StringVarP(&toMapMethodName, "method", "m", "ToMap", "out method name")
+	toMapCmd.Flags().StringVarP(&toMapTag, "tag", "s", "to-map", "tag from which read metadata")
 
-	nameCmd.Flags().StringVarP(&target, "target", "t", "", "target type")
-	nameCmd.Flags().StringVarP(&methodName, "method", "m", DefaultNameMethodName, "out method name")
+	nameCmd.Flags().StringVarP(&nameMethodName, "method", "m", DefaultNameMethodName, "out method name")
+
+	partialCmd.Flags().StringVarP(&partialPrefix, "prefix", "e", "Partial",
+		"struct name prefix, no effect when used with --structname")
+	partialCmd.Flags().StringVarP(&partialSuffix, "suffix", "s", "",
+		"struct name suffix, no effect when used with --structname")
+	partialCmd.Flags().StringVarP(&partialStructName, "structname", "n", "",
+		"struct name, if set suffix and prefix options will be ignored")
 
 	rootCmd.AddCommand(toMapCmd)
 	rootCmd.AddCommand(nameCmd)
+	rootCmd.AddCommand(partialCmd)
 }

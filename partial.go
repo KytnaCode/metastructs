@@ -20,6 +20,7 @@ type PartialConfig struct {
 	Suffix       string
 	Prefix       *string
 	PreserveTags bool
+	ForcePointer bool
 }
 
 func Partial(w io.Writer, cfg PartialConfig) error {
@@ -56,12 +57,26 @@ func Partial(w io.Writer, cfg PartialConfig) error {
 
 	for i := range structType.NumFields() {
 		field := structType.Field(i)
-		structField := jen.Id(field.Name()).Op("*")
+		structField := jen.Id(field.Name())
 
 		typ := field.Type()
 
+		var indirection int
+
 		for {
 			if named, ok := typ.(*types.Named); ok {
+				if _, ok := typ.Underlying().(*types.Interface); ok {
+					indirection--
+				}
+
+				for range indirection {
+					structField.Op("*")
+				}
+
+				if cfg.ForcePointer {
+					structField.Op("*")
+				}
+
 				if named.Obj().Pkg().Path() == cfg.Typ.Obj().Pkg().Path() {
 					structField.Id(named.Obj().Name())
 				} else {
@@ -70,13 +85,18 @@ func Partial(w io.Writer, cfg PartialConfig) error {
 
 				break
 			} else if basic, ok := typ.(*types.Basic); ok {
-				structField.Id(basic.String())
+				structField.Op("*").Id(basic.String())
 
 				break
 			} else if pointer, ok := typ.(*types.Pointer); ok {
 				typ = pointer.Elem()
+				indirection++
 
 				continue
+			} else if inter, ok := typ.(*types.Interface); ok {
+				structField.Id(inter.String())
+
+				break
 			}
 
 			return fmt.Errorf("unsupported type: `%v`", typ.String())

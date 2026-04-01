@@ -10,17 +10,20 @@ import (
 
 const testPartialUserName = "testPartialUser"
 
-var expectedPartialTmpl *template.Template
+var (
+	expectedPartialTmpl       *template.Template
+	expectedPartialTaggetTmpl *template.Template
+)
 
 var _ = testPartialUser{}
 
 type testType string
 
 type testPartialUser struct {
-	Name       string
-	Pass       string
-	Registered time.Time
-	ExtraData  testType
+	Name       string    `db:"name,omitempty" json:"name"`
+	Pass       string    `db:"pass"           json:"pass"`
+	Registered time.Time `db:"-"              json:"registered"`
+	ExtraData  testType  `db:",omitempty"     json:",omitempty"`
 }
 
 func init() {
@@ -36,6 +39,22 @@ type {{.StructName}} struct {
 	Pass       *string
 	Registered *time.Time
 	ExtraData  *testType
+}
+`)
+	if err != nil {
+		panic(err)
+	}
+
+	expectedPartialTaggetTmpl, err = template.New("expected").Parse(`// {{.Comment}}
+package {{.Package}}
+
+import "time"
+
+type {{.StructName}} struct {
+	Name       *string    {{.NameTag}}
+	Pass       *string    {{.PassTag}}
+	Registered *time.Time {{.RegisteredTag}}
+	ExtraData  *testType  {{.ExtraTag}}
 }
 `)
 	if err != nil {
@@ -87,6 +106,7 @@ func TestPartial(t *testing.T) {
 				StructName: data.structName,
 				Suffix:     &data.prefix,
 				Prefix:     data.prefix,
+				IgnoreTags: true,
 			}
 
 			var res strings.Builder
@@ -120,5 +140,49 @@ func TestPartial(t *testing.T) {
 				t.FailNow()
 			}
 		})
+	}
+}
+
+func TestPartial_Tagget(t *testing.T) {
+	t.Parallel()
+
+	typ := getType(t, testPartialUserName)
+
+	const pkgName = "main"
+
+	const structName = "MyStructName"
+
+	cfg := PartialConfig{
+		Typ:        typ,
+		PkgName:    pkgName,
+		StructName: structName,
+	}
+
+	var res strings.Builder
+
+	if err := Partial(&res, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	var expected strings.Builder
+
+	//nolint:gosec // No hardcoded credentials, PassTag is just dummy data.
+	err := expectedPartialTaggetTmpl.Execute(&expected, map[string]any{
+		"Comment":       PackageComment,
+		"Package":       pkgName,
+		"StructName":    structName,
+		"NameTag":       "`db:\"name,omitempty\" json:\"name\"`",
+		"PassTag":       "`db:\"pass\"           json:\"pass\"`",
+		"RegisteredTag": "`db:\"-\"              json:\"registered\"`",
+		"ExtraTag":      "`db:\",omitempty\"     json:\",omitempty\"`",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if res.String() != expected.String() {
+		printDiff(t, expected.String(), res.String())
+
+		t.FailNow()
 	}
 }

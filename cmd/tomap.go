@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -28,31 +26,21 @@ var toMapCmd = &cobra.Command{
 		}
 
 		cfg := tomap.Config{
-			PkgName:    util.GetPkgName(pkgName),
 			MethodName: toMapMethodName,
 			TagName:    &toMapTag,
 			Typ:        typ,
 			Pointer:    pointer,
 		}
 
-		file := filepath.Clean(util.Filename(sourceType, "map", test))
+		path := filepath.Clean(util.Filename(sourceType, "map", test))
 
-		f, err := os.Create(file)
-		if err != nil {
-			return err
-		}
-
-		defer func() {
-			if err := f.Close(); err != nil {
-				log.Println(err)
-			}
-		}()
+		f := util.NewFile(util.GetPkgName(pkgName))
 
 		if err := tomap.ToMap(f, cfg); err != nil {
 			return err
 		}
 
-		return f.Sync()
+		return f.Save(path)
 	},
 }
 

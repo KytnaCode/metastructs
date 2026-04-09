@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"go/types"
-	"io"
 	"slices"
 	"sort"
 	"strings"
@@ -27,9 +26,6 @@ const (
 type Config struct {
 	// Output's method name, defaults to [DefaultMethodName].
 	MethodName string
-
-	// Generated file's package.
-	PkgName string
 
 	// Target type, must be a struct.
 	Typ *types.Named
@@ -57,17 +53,13 @@ type Config struct {
 // into `w`.
 //
 // cfg.Typ and cfg.PkgName are required, cfg.MethodName defaults to [DefaultMethodName].
-func ToMap(w io.Writer, cfg Config) error {
+func ToMap(f *jen.File, cfg Config) error {
 	if cfg.MethodName == "" {
 		cfg.MethodName = DefaultMethodName
 	}
 
 	if cfg.Typ == nil {
 		return errors.New("type must not be nil")
-	}
-
-	if cfg.PkgName == "" {
-		return errors.New("cfg.PkgName is required")
 	}
 
 	if cfg.TagName == nil {
@@ -171,8 +163,6 @@ func ToMap(w io.Writer, cfg Config) error {
 
 	stmts = append(stmts, jen.Return(jen.Id(mapID)))
 
-	f := util.NewFile(cfg.PkgName)
-
 	recvType := jen.Id(cfg.Typ.Obj().Name())
 
 	if cfg.Pointer {
@@ -185,5 +175,5 @@ func ToMap(w io.Writer, cfg Config) error {
 		stmts...,
 	)
 
-	return f.Render(w)
+	return nil
 }

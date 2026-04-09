@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -26,29 +24,19 @@ var nameCmd = &cobra.Command{
 
 		cfg := structname.Config{
 			Typ:        typ,
-			PkgName:    util.GetPkgName(pkgName),
 			MethodName: structNameMethodName,
 			Pointer:    pointer,
 		}
 
-		file := filepath.Clean(util.Filename(sourceType, "name", test))
+		path := filepath.Clean(util.Filename(sourceType, "name", test))
 
-		f, err := os.Create(file)
-		if err != nil {
-			return err
-		}
-
-		defer func() {
-			if err := f.Close(); err != nil {
-				log.Println(err)
-			}
-		}()
+		f := util.NewFile(pkgName)
 
 		if err := structname.StructName(f, cfg); err != nil {
 			return err
 		}
 
-		return f.Sync()
+		return f.Save(path)
 	},
 }
 

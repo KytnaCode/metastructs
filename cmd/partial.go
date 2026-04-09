@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-	"os"
 	"path/filepath"
 
 	"github.com/kytnacode/metastructs/pkg/partial"
@@ -28,7 +26,6 @@ var partialCmd = &cobra.Command{
 
 		cfg := partial.Config{
 			Typ:          typ,
-			PkgName:      util.GetPkgName(pkgName),
 			StructName:   partialStructName,
 			Suffix:       partialSuffix,
 			Prefix:       &partialPrefix,
@@ -36,24 +33,15 @@ var partialCmd = &cobra.Command{
 			ForcePointer: partialForcePointer,
 		}
 
-		file := filepath.Clean(util.Filename(typ.Obj().Name(), "partial", test))
+		path := filepath.Clean(util.Filename(typ.Obj().Name(), "partial", test))
 
-		f, err := os.Create(file)
-		if err != nil {
-			return err
-		}
-
-		defer func() {
-			if err := f.Close(); err != nil {
-				log.Println(err)
-			}
-		}()
+		f := util.NewFile(util.GetPkgName(pkgName))
 
 		if err := partial.Partial(f, cfg); err != nil {
 			return err
 		}
 
-		return f.Sync()
+		return f.Save(path)
 	},
 }
 

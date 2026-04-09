@@ -2,7 +2,6 @@ package tomap_test
 
 import (
 	"go/types"
-	"io"
 	"reflect"
 	"strings"
 	"testing"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/kytnacode/metastructs"
 	"github.com/kytnacode/metastructs/pkg/tomap"
+	"github.com/kytnacode/metastructs/pkg/util"
 	"github.com/kytnacode/metastructs/pkg/util/utiltest"
 	"github.com/kytnacode/metastructs/testdata"
 )
@@ -95,15 +95,16 @@ func TestToMap_Defaults(t *testing.T) {
 	const pkgName = "main"
 
 	cfg := tomap.Config{
-		PkgName: pkgName,
-		Typ:     typ,
+		Typ: typ,
 	}
 
-	var res strings.Builder
+	f := util.NewFile(pkgName)
 
-	if err := tomap.ToMap(&res, cfg); err != nil {
+	if err := tomap.ToMap(f, cfg); err != nil {
 		t.Fatal(err)
 	}
+
+	res := f.GoString()
 
 	var expected strings.Builder
 
@@ -121,8 +122,8 @@ func TestToMap_Defaults(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if res.String() != expected.String() {
-		utiltest.PrintDiff(t, expected.String(), res.String())
+	if res != expected.String() {
+		utiltest.PrintDiff(t, expected.String(), res)
 		t.Fail()
 	}
 }
@@ -137,16 +138,17 @@ func TestToMap_CustomMethodName(t *testing.T) {
 	const methodName = "CustomMethodName"
 
 	cfg := tomap.Config{
-		PkgName:    pkgName,
 		Typ:        typ,
 		MethodName: methodName,
 	}
 
-	var res strings.Builder
+	f := util.NewFile(pkgName)
 
-	if err := tomap.ToMap(&res, cfg); err != nil {
+	if err := tomap.ToMap(f, cfg); err != nil {
 		t.Fatal(err)
 	}
+
+	res := f.GoString()
 
 	var expected strings.Builder
 
@@ -164,8 +166,8 @@ func TestToMap_CustomMethodName(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if res.String() != expected.String() {
-		utiltest.PrintDiff(t, expected.String(), res.String())
+	if res != expected.String() {
+		utiltest.PrintDiff(t, expected.String(), res)
 		t.Fail()
 	}
 }
@@ -178,16 +180,17 @@ func TestToMap_PointerReceiver(t *testing.T) {
 	const pkgName = "models"
 
 	cfg := tomap.Config{
-		PkgName: pkgName,
 		Typ:     typ,
 		Pointer: true,
 	}
 
-	var res strings.Builder
+	f := util.NewFile(pkgName)
 
-	if err := tomap.ToMap(&res, cfg); err != nil {
+	if err := tomap.ToMap(f, cfg); err != nil {
 		t.Fatal(err)
 	}
+
+	res := f.GoString()
 
 	var expected strings.Builder
 
@@ -205,8 +208,8 @@ func TestToMap_PointerReceiver(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if res.String() != expected.String() {
-		utiltest.PrintDiff(t, expected.String(), res.String())
+	if res != expected.String() {
+		utiltest.PrintDiff(t, expected.String(), res)
 
 		t.Fail()
 	}
@@ -215,28 +218,11 @@ func TestToMap_PointerReceiver(t *testing.T) {
 func TestToMap_NilType(t *testing.T) {
 	t.Parallel()
 
-	cfg := tomap.Config{
-		PkgName: "main",
-	}
+	f := util.NewFile("main")
 
-	err := tomap.ToMap(io.Discard, cfg)
+	err := tomap.ToMap(f, tomap.Config{})
 	if err == nil {
 		t.Fatal("expected a non-nil error")
-	}
-}
-
-func TestToMap_MissingPackageName(t *testing.T) {
-	t.Parallel()
-
-	typ := getTestStructType(t)
-
-	cfg := tomap.Config{
-		Typ: typ,
-	}
-
-	err := tomap.ToMap(io.Discard, cfg)
-	if err == nil {
-		t.Fatal("expected to map return an error when it cannot get package name")
 	}
 }
 
@@ -246,11 +232,12 @@ func TestToMap_NoStructType(t *testing.T) {
 	typ := utiltest.GetType(t, nonStructTestTypeName)
 
 	cfg := tomap.Config{
-		PkgName: "main",
-		Typ:     typ,
+		Typ: typ,
 	}
 
-	err := tomap.ToMap(io.Discard, cfg)
+	f := util.NewFile("main")
+
+	err := tomap.ToMap(f, cfg)
 	if err == nil {
 		t.Fatal("expected ToMap return error when called with a non struct type")
 	}
@@ -264,15 +251,16 @@ func TestToMap_Tags(t *testing.T) {
 	const pkgMain = "main"
 
 	cfg := tomap.Config{
-		PkgName: pkgMain,
-		Typ:     typ,
+		Typ: typ,
 	}
 
-	var res strings.Builder
+	f := util.NewFile(pkgMain)
 
-	if err := tomap.ToMap(&res, cfg); err != nil {
+	if err := tomap.ToMap(f, cfg); err != nil {
 		t.Fatal(err)
 	}
+
+	res := f.GoString()
 
 	expectedTmpl, err := template.New("expected").Parse(`// {{.Comment}}
 package {{.Package}}
@@ -304,8 +292,8 @@ func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
 		t.Fatal(err)
 	}
 
-	if res.String() != expected.String() {
-		utiltest.PrintDiff(t, expected.String(), res.String())
+	if res != expected.String() {
+		utiltest.PrintDiff(t, expected.String(), res)
 
 		t.Fail()
 	}
@@ -319,15 +307,16 @@ func TestToMap_OmitEmptyFields(t *testing.T) {
 	const pkgName = "main"
 
 	cfg := tomap.Config{
-		PkgName: pkgName,
-		Typ:     typ,
+		Typ: typ,
 	}
 
-	var res strings.Builder
+	f := util.NewFile(pkgName)
 
-	if err := tomap.ToMap(&res, cfg); err != nil {
+	if err := tomap.ToMap(f, cfg); err != nil {
 		t.Fatal(err)
 	}
+
+	res := f.GoString()
 
 	expectedTmpl, err := template.New("expected").Parse(`// {{.Comment}}
 package {{.Package}}
@@ -363,8 +352,8 @@ func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
 		t.Fatal(err)
 	}
 
-	if res.String() != expected.String() {
-		utiltest.PrintDiff(t, expected.String(), res.String())
+	if res != expected.String() {
+		utiltest.PrintDiff(t, expected.String(), res)
 
 		t.Fail()
 	}

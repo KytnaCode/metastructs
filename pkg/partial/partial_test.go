@@ -11,6 +11,7 @@ import (
 
 	"github.com/kytnacode/metastructs"
 	"github.com/kytnacode/metastructs/pkg/partial"
+	"github.com/kytnacode/metastructs/pkg/util"
 	"github.com/kytnacode/metastructs/pkg/util/utiltest"
 )
 
@@ -117,17 +118,18 @@ func TestPartial(t *testing.T) {
 
 			cfg := partial.Config{
 				Typ:        typ,
-				PkgName:    data.pkgName,
 				StructName: data.structName,
 				Suffix:     data.suffix,
 				Prefix:     &data.prefix,
 			}
 
-			var res strings.Builder
+			f := util.NewFile(data.pkgName)
 
-			if err := partial.Partial(&res, cfg); err != nil {
+			if err := partial.Partial(f, cfg); err != nil {
 				t.Fatal(err)
 			}
+
+			res := f.GoString()
 
 			var expected strings.Builder
 
@@ -148,8 +150,8 @@ func TestPartial(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if res.String() != expected.String() {
-				utiltest.PrintDiff(t, expected.String(), res.String())
+			if res != expected.String() {
+				utiltest.PrintDiff(t, expected.String(), res)
 
 				t.FailNow()
 			}
@@ -168,16 +170,17 @@ func TestPartial_Tagget(t *testing.T) {
 
 	cfg := partial.Config{
 		Typ:          typ,
-		PkgName:      pkgName,
 		StructName:   structName,
 		PreserveTags: true,
 	}
 
-	var res strings.Builder
+	f := util.NewFile(pkgName)
 
-	if err := partial.Partial(&res, cfg); err != nil {
+	if err := partial.Partial(f, cfg); err != nil {
 		t.Fatal(err)
 	}
+
+	res := f.GoString()
 
 	var expected strings.Builder
 
@@ -196,8 +199,8 @@ func TestPartial_Tagget(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if res.String() != expected.String() {
-		utiltest.PrintDiff(t, expected.String(), res.String())
+	if res != expected.String() {
+		utiltest.PrintDiff(t, expected.String(), res)
 
 		t.FailNow()
 	}

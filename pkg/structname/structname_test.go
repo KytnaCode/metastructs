@@ -8,6 +8,7 @@ import (
 
 	"github.com/kytnacode/metastructs"
 	"github.com/kytnacode/metastructs/pkg/structname"
+	"github.com/kytnacode/metastructs/pkg/util"
 	"github.com/kytnacode/metastructs/pkg/util/utiltest"
 )
 
@@ -87,14 +88,13 @@ func TestName(t *testing.T) {
 
 			cfg := structname.Config{
 				Typ:        named,
-				PkgName:    data.pkg,
 				MethodName: data.methodName,
 				Pointer:    data.pointer,
 			}
 
-			var res strings.Builder
+			f := util.NewFile(data.pkg)
 
-			if err := structname.StructName(&res, cfg); err != nil {
+			if err := structname.StructName(f, cfg); err != nil {
 				t.Fatal(err)
 			}
 
@@ -125,8 +125,10 @@ func TestName(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if res.String() != expected.String() {
-				utiltest.PrintDiff(t, expected.String(), res.String())
+			res := f.GoString()
+
+			if res != expected.String() {
+				utiltest.PrintDiff(t, expected.String(), res)
 
 				t.FailNow()
 			}

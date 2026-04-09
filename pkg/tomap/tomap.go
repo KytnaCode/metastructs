@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go/types"
 	"io"
+	"slices"
 	"sort"
 	"strings"
 
@@ -81,7 +82,7 @@ func ToMap(w io.Writer, cfg Config) error {
 
 	fields := util.GetStructFields(structType)
 
-	values := make(map[jen.Code]jen.Code, len(fields)) // Map values.
+	values := make(map[string]jen.Code, len(fields)) // Map values.
 
 	omitemptyFields := make(map[string]util.FieldData, len(fields))
 
@@ -107,16 +108,31 @@ func ToMap(w io.Writer, cfg Config) error {
 			}
 		}
 
-		values[jen.Lit(name)] = jen.Id(metastructs.MethodReceiver).Dot(field.Name)
+		values[name] = jen.Id(metastructs.MethodReceiver).Dot(field.Name)
 	}
 
 	const mapID = "structMap"
 
-	stmts := make([]jen.Code, 0, len(omitemptyFields)+2)
+	stmts := make([]jen.Code, 0, len(omitemptyFields)+len(values)+2)
 
 	stmts = append(stmts,
-		jen.Id(mapID).Op(":=").Map(jen.String()).Any().Values(jen.Dict(values)),
+		jen.Id(mapID).Op(":=").Make(jen.Map(jen.String()).Any(), jen.Lit(len(values)+len(omitemptyFields))),
 	)
+
+	entryKeys := make([]string, 0, len(values))
+	for k := range values {
+		entryKeys = append(entryKeys, k)
+	}
+
+	slices.Sort(entryKeys)
+
+	for _, k := range entryKeys {
+		value := values[k]
+
+		stmt := jen.Id(mapID).Index(jen.Lit(k)).Op("=").Add(value)
+
+		stmts = append(stmts, stmt)
+	}
 
 	keys := make([]string, 0, len(omitemptyFields))
 	for k := range omitemptyFields {

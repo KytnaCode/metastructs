@@ -68,11 +68,10 @@ func init() {
 package {{.Package}}
 
 func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
-	structMap := map[string]any{
-		"{{.CountKey}}": {{.Receiver}}.Count,
-		"{{.NameKey}}":  {{.Receiver}}.Name,
-		"{{.SliceKey}}": {{.Receiver}}.Slice,
-	}
+	structMap := make(map[string]any, 3)
+	structMap["{{.CountKey}}"] = {{.Receiver}}.Count
+	structMap["{{.NameKey}}"] = {{.Receiver}}.Name
+	structMap["{{.SliceKey}}"] = {{.Receiver}}.Slice
 	return structMap
 }
 `)
@@ -266,10 +265,9 @@ func TestToMap_Tags(t *testing.T) {
 package {{.Package}}
 
 func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
-	structMap := map[string]any{
-		"{{.CountKey}}": {{.Receiver}}.Count,
-		"{{.NameKey}}":  {{.Receiver}}.Name,
-	}
+	structMap := make(map[string]any, 2)
+	structMap["{{.CountKey}}"] = {{.Receiver}}.Count
+	structMap["{{.NameKey}}"] = {{.Receiver}}.Name
 	return structMap
 }
 `)
@@ -322,7 +320,8 @@ func TestToMap_OmitEmptyFields(t *testing.T) {
 package {{.Package}}
 
 func ({{.Receiver}} {{.RecvType}}) {{.MethodName}}() map[string]any {
-	structMap := map[string]any{"{{.CountKey}}": {{.Receiver}}.Count}
+	structMap := make(map[string]any, 3)
+	structMap["{{.CountKey}}"] = {{.Receiver}}.Count
 	if {{.Receiver}}.Name != "" {
 		structMap["{{.NameKey}}"] = {{.Receiver}}.Name
 	}
